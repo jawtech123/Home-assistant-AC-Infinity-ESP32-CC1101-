@@ -1,0 +1,56 @@
+# --- Credentials -------------------------------------------------------------
+# config.h holds WiFi and MQTT credentials. Only config.h.example is tracked.
+fan_remote_ha/config.h
+config.h
+secrets.h
+*.pem
+*.key
+
+# --- Toolchain ---------------------------------------------------------------
+# The arduino-cli data directory contains the whole ESP32 toolchain (hundreds of
+# MB) and an inventory.yaml holding a per-installation id and secret.
+arduino-data/
+bin/
+
+# --- Build output ------------------------------------------------------------
+build/
+*/build/
+*.bin
+*.elf
+*.map
+*.hex
+*.o
+*.a
+*.d
+
+# --- Editor / OS -------------------------------------------------------------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# --- Python ------------------------------------------------------------------
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# --- Scratch -----------------------------------------------------------------
+# Working captures. The reference captures under captures/ are tracked
+# deliberately; add new session logs here rather than committing every run.
+captures/session*.txt
+captures/scratch*.txt
+*.log
+
+# --- Excluded from the repo --------------------------------------------------
+# Kept locally: a wiring screenshot that shows GDO0 on D2. That is incorrect --
+# GDO0 is D4 -- so it is not published. The correct wiring is in README.md.
+Pasted image.png
+captures/dipswitch.txt
+FINDINGS.md
+online_findings.md
+
+# Local tooling state
+.claude/

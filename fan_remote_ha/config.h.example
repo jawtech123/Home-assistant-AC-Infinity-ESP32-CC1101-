@@ -1,0 +1,43 @@
+/**
+ * Copy this file to config.h and fill in your details.
+ *
+ *     cp config.h.example config.h
+ *
+ * config.h is where your credentials live, so the sketch itself stays safe to
+ * share or commit.
+ */
+
+#pragma once
+
+// --- WiFi --------------------------------------------------------------------
+
+#define WIFI_SSID       "your-wifi-name"
+#define WIFI_PASSWORD   "your-wifi-password"
+
+// --- MQTT broker -------------------------------------------------------------
+
+/* With the Mosquitto add-on this is your Home Assistant host's IP, e.g.
+   "192.168.1.50". A hostname such as "homeassistant.local" often works too, but
+   an IP address is more reliable on an ESP32. */
+#define MQTT_HOST       "192.168.1.50"
+#define MQTT_PORT       1883
+
+/* The MQTT user you created in Home Assistant under
+   Settings -> People -> Users. This is NOT your HA login unless you made one
+   specifically for MQTT. */
+#define MQTT_USER       "mqtt-user"
+#define MQTT_PASSWORD   "mqtt-password"
+
+// --- Identity ----------------------------------------------------------------
+
+/* Used for the MQTT topics, the HA entity name, and the hostname. Change it if
+   you run more than one of these. */
+#define DEVICE_NAME     "AC Infinity Fan"
+#define DEVICE_ID       "ac_infinity_fan"
+
+// --- Protocol ----------------------------------------------------------------
+
+/* Payload address nibble. Leave at 0 unless you know otherwise: 0 is the only
+   value ever observed, and how a non-zero address affects the checksum has not
+   been verified. See protocol.md. */
+#define FAN_ADDRESS     0
