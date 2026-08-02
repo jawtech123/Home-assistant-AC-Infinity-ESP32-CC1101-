@@ -2,9 +2,9 @@
  * fan_remote_ha -- Home Assistant control for the AC Infinity fan.
  *
  * ESP32 + CC1101 that joins your WiFi, connects to the Mosquitto broker, and
- * announces itself to Home Assistant over MQTT discovery. HA creates a native
- * fan entity automatically -- on/off plus a speed slider -- with no custom
- * component and no YAML.
+ * announces itself to Home Assistant over MQTT discovery. HA creates entities
+ * automatically -- an OFF/1-10 dropdown, plus a standard fan entity -- with no
+ * custom component and no YAML.
  *
  * Transmits the same 2-FSK protocol as fan_remote.ino. See protocol.md and
  * AC_INFINITY_REMOTE_SPEC.md. The critical detail is that the remote is 2-FSK,

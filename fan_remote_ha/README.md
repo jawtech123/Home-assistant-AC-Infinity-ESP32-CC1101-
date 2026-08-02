@@ -1,7 +1,8 @@
 # Home Assistant bridge
 
-ESP32 + CC1101 that exposes the AC Infinity fan to Home Assistant as a native
-fan entity over MQTT — on/off, a speed slider, automations and voice control.
+ESP32 + CC1101 that exposes the AC Infinity fan to Home Assistant over MQTT —
+an OFF/1–10 dropdown, plus a standard fan entity for automations and voice
+control.
 
 No custom component and no YAML. The ESP32 announces itself via MQTT discovery
 and HA creates the entity by itself.
