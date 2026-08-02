@@ -293,8 +293,13 @@ static void onMessage(char *topic, byte *payload, unsigned int length) {
 }
 
 /* Home Assistant MQTT discovery. Publishing this retained makes HA create the
-   fan entity by itself -- no YAML, no custom component. percentage_step 10
-   gives the slider exactly the 11 positions the fan supports. */
+   fan entity by itself -- no YAML, no custom component.
+
+   Deliberately advertises preset_modes and NOT percentage. Home Assistant
+   renders any percentage-capable fan with a continuous slider, which is
+   imprecise for a device with only 11 discrete positions. Presets give
+   selectable values instead. The percentage command topic is still subscribed
+   below, so manual MQTT publishes keep working, but HA never shows a slider. */
 static void publishDiscovery() {
   static char cfg[1200];
   snprintf(cfg, sizeof(cfg),
@@ -303,17 +308,12 @@ static void publishDiscovery() {
       "\"unique_id\":\"%s\","
       "\"state_topic\":\"%s\","
       "\"command_topic\":\"%s\","
-      "\"percentage_state_topic\":\"%s\","
-      "\"percentage_command_topic\":\"%s\","
       "\"preset_mode_state_topic\":\"%s\","
       "\"preset_mode_command_topic\":\"%s\","
       "\"preset_modes\":[\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"8\",\"9\",\"10\"],"
       "\"availability_topic\":\"%s\","
       "\"payload_available\":\"online\","
       "\"payload_not_available\":\"offline\","
-      "\"speed_range_min\":1,"
-      "\"speed_range_max\":10,"
-      "\"percentage_step\":10,"
       "\"optimistic\":true,"
       "\"device\":{"
         "\"identifiers\":[\"%s\"],"
@@ -322,7 +322,7 @@ static void publishDiscovery() {
         "\"model\":\"433 MHz remote clone (ESP32 + CC1101)\""
       "}"
     "}",
-    DEVICE_NAME, DEVICE_ID, T_STATE, T_CMD, T_PCT_STATE, T_PCT_CMD,
+    DEVICE_NAME, DEVICE_ID, T_STATE, T_CMD,
     T_PRESET_ST, T_PRESET_CMD, T_AVAIL, DEVICE_ID, DEVICE_NAME);
 
   mqtt.publish(T_DISCOVERY, cfg, true);

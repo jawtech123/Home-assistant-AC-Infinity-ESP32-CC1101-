@@ -94,20 +94,26 @@ data:
   preset_mode: "5"
 ```
 
-The percentage interface still works for automations that prefer it
-(`fan.set_percentage`, 0–100 mapped in steps of 10, any non-zero value giving at
-least speed 1).
+The entity deliberately does **not** advertise a percentage interface. Home
+Assistant renders any percentage-capable fan with a continuous slider, which is
+imprecise when the device has only 11 positions. Presets give discrete values.
 
-**For speed buttons on a dashboard**, use a tile card with the fan-speed
-feature, or a grid of buttons calling `fan.set_preset_mode`:
+The percentage command topic is still subscribed, so a manual
+`acinfinity/<id>/speed/set` publish (0–100) still works — HA just never shows a
+slider for it.
+
+**For speed buttons on a dashboard:**
 
 ```yaml
 type: tile
 entity: fan.ac_infinity_fan
 features:
   - type: fan-preset-modes
-    style: icons
+    style: icons          # omit for a dropdown instead
+    preset_modes: ["1","2","3","4","5","6","7","8","9","10"]
 ```
+
+Power on/off is on the tile itself, so all 11 states are reachable.
 
 Serial control still works for testing without HA — type `0`–`10` and enter.
 
