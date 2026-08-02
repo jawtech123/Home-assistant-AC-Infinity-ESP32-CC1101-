@@ -79,9 +79,35 @@ target:
   entity_id: fan.ac_infinity_fan
 ```
 
-The fan has 11 discrete states, so the slider maps 0–100% onto speeds 0–10 in
-steps of 10. Any non-zero percentage produces at least speed 1 rather than
-silently turning the fan off.
+### Speeds
+
+The fan has 11 discrete states, so the entity exposes **preset modes `1`–`10`**
+alongside the power toggle. Presets are discrete values rather than a continuous
+slider, which suits an 11-position fan — Home Assistant's percentage slider
+feels imprecise when only 11 positions exist.
+
+```yaml
+service: fan.set_preset_mode
+target:
+  entity_id: fan.ac_infinity_fan
+data:
+  preset_mode: "5"
+```
+
+The percentage interface still works for automations that prefer it
+(`fan.set_percentage`, 0–100 mapped in steps of 10, any non-zero value giving at
+least speed 1).
+
+**For speed buttons on a dashboard**, use a tile card with the fan-speed
+feature, or a grid of buttons calling `fan.set_preset_mode`:
+
+```yaml
+type: tile
+entity: fan.ac_infinity_fan
+features:
+  - type: fan-preset-modes
+    style: icons
+```
 
 Serial control still works for testing without HA — type `0`–`10` and enter.
 

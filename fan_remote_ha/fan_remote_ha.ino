@@ -61,6 +61,8 @@ static const uint8_t SPEED_MAX   = 10;
 #define T_CMD        T_BASE "/set"
 #define T_PCT_STATE  T_BASE "/speed"          // 0-100
 #define T_PCT_CMD    T_BASE "/speed/set"
+#define T_PRESET_ST  T_BASE "/preset"          // "1".."10"
+#define T_PRESET_CMD T_BASE "/preset/set"
 #define T_AVAIL      T_BASE "/available"
 #define T_DISCOVERY  "homeassistant/fan/" DEVICE_ID "/config"
 
@@ -224,9 +226,21 @@ static uint8_t currentSpeed = 0;
 
 static void publishState() {
   mqtt.publish(T_STATE, currentSpeed > 0 ? "ON" : "OFF", true);
+
   char pct[8];
   snprintf(pct, sizeof(pct), "%u", (unsigned)(currentSpeed * 10));   // 0-10 -> 0-100
   mqtt.publish(T_PCT_STATE, pct, true);
+
+  /* Preset mode mirrors the speed as a discrete 1-10 label. Home Assistant
+     renders presets as distinct selectable values rather than a continuous
+     slider, which is what an 11-position fan actually wants. Speed 0 has no
+     preset -- OFF is the entity's power state, and HA rejects a preset named
+     "off". */
+  if (currentSpeed > 0) {
+    char preset[4];
+    snprintf(preset, sizeof(preset), "%u", currentSpeed);
+    mqtt.publish(T_PRESET_ST, preset, true);
+  }
 }
 
 static void transmitSpeed(uint8_t speed) {
@@ -260,6 +274,11 @@ static void onMessage(char *topic, byte *payload, unsigned int length) {
     } else if (!strcmp(msg, "OFF")) {
       transmitSpeed(0);
     }
+  } else if (!strcmp(topic, T_PRESET_CMD)) {
+    long v = strtol(msg, nullptr, 10);
+    if (v >= 1 && v <= SPEED_MAX) transmitSpeed((uint8_t)v);
+    else Serial.printf("ignoring preset '%s' (expect 1-%u)\n", msg, SPEED_MAX);
+
   } else if (!strcmp(topic, T_PCT_CMD)) {
     long pct = strtol(msg, nullptr, 10);
     if (pct < 0) pct = 0;
@@ -277,7 +296,7 @@ static void onMessage(char *topic, byte *payload, unsigned int length) {
    fan entity by itself -- no YAML, no custom component. percentage_step 10
    gives the slider exactly the 11 positions the fan supports. */
 static void publishDiscovery() {
-  static char cfg[900];
+  static char cfg[1200];
   snprintf(cfg, sizeof(cfg),
     "{"
       "\"name\":\"%s\","
@@ -286,6 +305,9 @@ static void publishDiscovery() {
       "\"command_topic\":\"%s\","
       "\"percentage_state_topic\":\"%s\","
       "\"percentage_command_topic\":\"%s\","
+      "\"preset_mode_state_topic\":\"%s\","
+      "\"preset_mode_command_topic\":\"%s\","
+      "\"preset_modes\":[\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"8\",\"9\",\"10\"],"
       "\"availability_topic\":\"%s\","
       "\"payload_available\":\"online\","
       "\"payload_not_available\":\"offline\","
@@ -300,8 +322,8 @@ static void publishDiscovery() {
         "\"model\":\"433 MHz remote clone (ESP32 + CC1101)\""
       "}"
     "}",
-    DEVICE_NAME, DEVICE_ID, T_STATE, T_CMD, T_PCT_STATE, T_PCT_CMD, T_AVAIL,
-    DEVICE_ID, DEVICE_NAME);
+    DEVICE_NAME, DEVICE_ID, T_STATE, T_CMD, T_PCT_STATE, T_PCT_CMD,
+    T_PRESET_ST, T_PRESET_CMD, T_AVAIL, DEVICE_ID, DEVICE_NAME);
 
   mqtt.publish(T_DISCOVERY, cfg, true);
   Serial.println("published HA discovery config");
@@ -317,6 +339,7 @@ static void connectMqtt() {
       publishDiscovery();
       mqtt.subscribe(T_CMD);
       mqtt.subscribe(T_PCT_CMD);
+      mqtt.subscribe(T_PRESET_CMD);
       publishState();
     } else {
       Serial.printf("failed rc=%d, retrying in 5s\n", mqtt.state());
