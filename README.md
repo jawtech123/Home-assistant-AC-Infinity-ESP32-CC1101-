@@ -1,8 +1,7 @@
 # AC Infinity fan → Home Assistant (ESP32 + CC1101)
 
 Control an AC Infinity 433 MHz fan from Home Assistant, using an ESP32 and a
-CC1101 radio. The remote's protocol was reverse engineered from scratch — as far
-as I can tell it had not been published anywhere before.
+CC1101 radio. The remote's protocol was reverse engineered from scratch.
 
 Home Assistant gets a **native fan entity** with on/off and a speed slider. No
 custom component, no YAML.
