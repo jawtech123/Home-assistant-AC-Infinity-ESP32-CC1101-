@@ -15,7 +15,7 @@ custom component, no YAML.
 
 - Replaces the handheld remote entirely — set any speed directly, no stepping
 - Native HA fan entity via MQTT discovery, created automatically
-- Discrete speed presets 1-10, shown as buttons — no imprecise slider
+- Two entities: a clean OFF/1-10 dropdown, plus a standard fan entity for voice and automations
 - Works with automations, scenes, dashboards and voice
 - Full protocol documentation so you can port it anywhere
 

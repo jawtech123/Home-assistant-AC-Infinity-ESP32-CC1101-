@@ -61,7 +61,37 @@ published HA discovery config
 The fan then appears under *Settings → Devices & Services → MQTT*, and as a fan
 card on your dashboard.
 
-## Using it
+## Two entities
+
+The bridge creates both, under one device:
+
+| Entity | Use |
+|---|---|
+| `select.ac_infinity_fan_speed` | **A single dropdown: OFF, 1–10.** No power buttons. Best for dashboards |
+| `fan.ac_infinity_fan` | Standard fan entity — voice control, HomeKit, fan-aware automations |
+
+A `select` can carry `OFF` as an ordinary option; a fan entity cannot, because
+Home Assistant reserves off/on as the power state and rejects a preset named
+"off". So the select gives all 11 states in one control with no toggle.
+
+Put the select on your dashboard and ignore the fan entity, or use both.
+
+```yaml
+type: entities
+entities:
+  - entity: select.ac_infinity_fan_speed
+    name: Fan speed
+```
+
+```yaml
+service: select.select_option
+target:
+  entity_id: select.ac_infinity_fan_speed
+data:
+  option: "5"        # or "OFF"
+```
+
+## Using the fan entity
 
 The entity is `fan.ac_infinity_fan` (name depends on `DEVICE_NAME`).
 

@@ -63,8 +63,11 @@ static const uint8_t SPEED_MAX   = 10;
 #define T_PCT_CMD    T_BASE "/speed/set"
 #define T_PRESET_ST  T_BASE "/preset"          // "1".."10"
 #define T_PRESET_CMD T_BASE "/preset/set"
+#define T_SEL_ST     T_BASE "/select"          // "OFF" or "1".."10"
+#define T_SEL_CMD    T_BASE "/select/set"
 #define T_AVAIL      T_BASE "/available"
 #define T_DISCOVERY  "homeassistant/fan/" DEVICE_ID "/config"
+#define T_DISC_SEL   "homeassistant/select/" DEVICE_ID "_speed/config"
 
 // --- Protocol ----------------------------------------------------------------
 
@@ -241,6 +244,15 @@ static void publishState() {
     snprintf(preset, sizeof(preset), "%u", currentSpeed);
     mqtt.publish(T_PRESET_ST, preset, true);
   }
+
+  /* The select entity carries OFF as a normal option, which a fan entity cannot
+     -- Home Assistant reserves off/on as the fan's power state and rejects a
+     preset named "off". A select therefore gives a single dropdown covering all
+     11 states with no power buttons at all. */
+  char sel[4];
+  if (currentSpeed == 0) snprintf(sel, sizeof(sel), "OFF");
+  else                   snprintf(sel, sizeof(sel), "%u", currentSpeed);
+  mqtt.publish(T_SEL_ST, sel, true);
 }
 
 static void transmitSpeed(uint8_t speed) {
@@ -274,6 +286,15 @@ static void onMessage(char *topic, byte *payload, unsigned int length) {
     } else if (!strcmp(msg, "OFF")) {
       transmitSpeed(0);
     }
+  } else if (!strcmp(topic, T_SEL_CMD)) {
+    if (!strcasecmp(msg, "OFF")) {
+      transmitSpeed(0);
+    } else {
+      long v = strtol(msg, nullptr, 10);
+      if (v >= 0 && v <= SPEED_MAX) transmitSpeed((uint8_t)v);
+      else Serial.printf("ignoring select '%s'\n", msg);
+    }
+
   } else if (!strcmp(topic, T_PRESET_CMD)) {
     long v = strtol(msg, nullptr, 10);
     if (v >= 1 && v <= SPEED_MAX) transmitSpeed((uint8_t)v);
@@ -326,7 +347,31 @@ static void publishDiscovery() {
     T_PRESET_ST, T_PRESET_CMD, T_AVAIL, DEVICE_ID, DEVICE_NAME);
 
   mqtt.publish(T_DISCOVERY, cfg, true);
-  Serial.println("published HA discovery config");
+
+  /* Second entity: a select listing OFF plus speeds 1-10. Shares the same
+     device block so both appear under one device in Home Assistant. */
+  snprintf(cfg, sizeof(cfg),
+    "{"
+      "\"name\":\"%s Speed\","
+      "\"unique_id\":\"%s_speed\","
+      "\"state_topic\":\"%s\","
+      "\"command_topic\":\"%s\","
+      "\"availability_topic\":\"%s\","
+      "\"payload_available\":\"online\","
+      "\"payload_not_available\":\"offline\","
+      "\"options\":[\"OFF\",\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"8\",\"9\",\"10\"],"
+      "\"icon\":\"mdi:fan\","
+      "\"device\":{"
+        "\"identifiers\":[\"%s\"],"
+        "\"name\":\"%s\","
+        "\"manufacturer\":\"AC Infinity\","
+        "\"model\":\"433 MHz remote clone (ESP32 + CC1101)\""
+      "}"
+    "}",
+    DEVICE_NAME, DEVICE_ID, T_SEL_ST, T_SEL_CMD, T_AVAIL, DEVICE_ID, DEVICE_NAME);
+  mqtt.publish(T_DISC_SEL, cfg, true);
+
+  Serial.println("published HA discovery config (fan + speed select)");
 }
 
 static void connectMqtt() {
@@ -340,6 +385,7 @@ static void connectMqtt() {
       mqtt.subscribe(T_CMD);
       mqtt.subscribe(T_PCT_CMD);
       mqtt.subscribe(T_PRESET_CMD);
+      mqtt.subscribe(T_SEL_CMD);
       publishState();
     } else {
       Serial.printf("failed rc=%d, retrying in 5s\n", mqtt.state());
