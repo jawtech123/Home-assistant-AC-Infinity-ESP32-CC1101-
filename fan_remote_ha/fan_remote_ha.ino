@@ -51,7 +51,26 @@ static const double SYNC_US   = 6667.0;
 static const double GAP_US    = 3333.0;
 
 static const uint8_t FRAME_BITS  = 16;
-static const uint8_t REPETITIONS = 8;
+static const uint8_t REPETITIONS = 8;    // frames per burst, as the remote sends
+
+/* How many times to send the whole burst. The real remote emits 8 frames per
+   button press, but a person pressing a button naturally sends several bursts
+   while watching the fan respond. A single burst is occasionally missed --
+   observed as "speed 6 works from 10 but not from OFF", which was really
+   intermittent reception rather than anything speed-specific. Repeating the
+   burst costs about a second of airtime and makes commands reliable. */
+static const uint8_t BURST_REPEATS = 3;
+static const uint16_t BURST_GAP_MS = 120;
+
+/* Coming from fully OFF needs more: the fan's receiver is cold and appears to
+   need longer to lock onto a signal than it does switching between two
+   running speeds. Observed directly -- OFF/1 -> 6 needed a manual pause to
+   land reliably, while running-speed changes did not. A longer lead-in delay
+   plus more repeats reproduces that pause automatically instead of relying on
+   the user to wait between commands. */
+static const uint8_t  WAKE_BURST_REPEATS = 6;
+static const uint16_t WAKE_LEAD_MS       = 200;
+
 static const uint8_t SPEED_MAX   = 10;
 
 // --- MQTT topics -------------------------------------------------------------
@@ -261,13 +280,23 @@ static void transmitSpeed(uint8_t speed) {
   uint8_t len = buildBurst(payload);
 
   radio.setPacketLengthMode(CC1101::PKT_LEN_MODE_FIXED, len);
-  CC1101::Status st = radio.transmit(txBuf, len);
 
-  if (st == CC1101::STATUS_OK) {
+  bool waking = (currentSpeed == 0 && speed != 0);
+  uint8_t repeats = waking ? WAKE_BURST_REPEATS : BURST_REPEATS;
+  if (waking) delay(WAKE_LEAD_MS);
+
+  bool ok = true;
+  for (uint8_t i = 0; i < repeats; i++) {
+    if (radio.transmit(txBuf, len) != CC1101::STATUS_OK) ok = false;
+    if (i + 1 < repeats) delay(BURST_GAP_MS);
+  }
+
+  if (ok) {
     currentSpeed = speed;
-    Serial.printf("TX speed=%u payload=0x%04X\n", speed, payload);
+    Serial.printf("TX speed=%u payload=0x%04X (%u bursts%s)\n", speed, payload, repeats,
+                  waking ? ", wake" : "");
   } else {
-    Serial.printf("TX speed=%u FAILED: %d\n", speed, st);
+    Serial.printf("TX speed=%u FAILED\n", speed);
   }
   publishState();
 }
