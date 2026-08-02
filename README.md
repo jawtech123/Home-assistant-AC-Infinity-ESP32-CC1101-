@@ -160,6 +160,14 @@ transmission can be recorded and replayed indefinitely by anyone in radio range.
 Typical for cheap 433 MHz appliance remotes, and fine for a fan — but don't rely
 on it for anything where unauthorised control would matter.
 
+## Disclaimer
+
+This project was built with AI assistance (protocol analysis, code, and
+documentation). It's provided as-is, with no warranty. Review the code before
+flashing it to your own hardware, and use it at your own risk — I take no
+responsibility or liability for any damage, malfunction, or other consequences
+arising from its use.
+
 ## Licence
 
 GPL-3.0 — see [LICENSE](LICENSE).
